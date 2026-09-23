@@ -4,6 +4,7 @@ import { computePrayerTimes } from '../src/prayerTimes.js';
 
 const GUYANCOURT = { lat: 48.7717, lon: 2.0761 };
 const WINTER_DATE = new Date('2024-12-21T00:00:00Z');
+const SUMMER_DATE = new Date('2024-06-21T00:00:00Z');
 
 function minutesSinceMidnight(date) {
   return date.getUTCHours() * 60 + date.getUTCMinutes() + date.getUTCSeconds() / 60;
@@ -37,4 +38,32 @@ test('winter 12° Fajr and Isha match the cited external reference within two mi
   const ishaReference = Date.parse('2024-12-21T17:15:00Z');
   assert.ok(Math.abs(fajr.getTime() - fajrReference) <= 2 * 60 * 1000);
   assert.ok(Math.abs(isha.getTime() - ishaReference) <= 2 * 60 * 1000);
+});
+
+test('summer uses the 1/7-night fallback when 12° is undefined', () => {
+  const times = computePrayerTimes(SUMMER_DATE, 60, GUYANCOURT.lon);
+  const nextDay = computePrayerTimes(new Date('2024-06-22T00:00:00Z'), 60, GUYANCOURT.lon);
+  const seventhOfNight = (nextDay.sunrise.getTime() - times.maghrib.getTime()) / 7;
+  console.log('Branche utilisée le 21 juin à 60°N : repli 1/7 de la nuit');
+  for (const name of ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha']) {
+    assert.ok(times[name] instanceof Date, `${name} should be a Date`);
+  }
+  assert.equal(times.fajr.getTime(), Math.trunc(nextDay.sunrise.getTime() - seventhOfNight));
+  assert.equal(times.isha.getTime(), Math.trunc(times.maghrib.getTime() + seventhOfNight));
+  assert.ok(times.maghrib < times.isha && times.isha < nextDay.sunrise);
+  assert.ok(times.fajr < nextDay.sunrise && times.maghrib < times.fajr);
+});
+
+test('Guyancourt summer order remains valid with angle-based times', () => {
+  const times = computePrayerTimes(SUMMER_DATE, GUYANCOURT.lat, GUYANCOURT.lon);
+  assert.ok(times.fajr < times.sunrise && times.sunrise < times.dhuhr
+    && times.dhuhr < times.asr && times.asr < times.maghrib && times.maghrib < times.isha);
+});
+
+test('winter does not trigger the 1/7-night fallback', () => {
+  const times = computePrayerTimes(WINTER_DATE, GUYANCOURT.lat, GUYANCOURT.lon);
+  const nextSunrise = computePrayerTimes(new Date('2024-12-22T00:00:00Z'), GUYANCOURT.lat, GUYANCOURT.lon).sunrise;
+  const winterSunset = times.maghrib;
+  const fallbackIsha = winterSunset.getTime() + (nextSunrise.getTime() - winterSunset.getTime()) / 7;
+  assert.notEqual(times.isha.getTime(), fallbackIsha);
 });
