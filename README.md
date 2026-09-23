@@ -7,3 +7,5 @@ Guyancourt, Île-de-France.
 les lanes de l'usine, sous les contrats de `~/factory/docs/contrats/`.
 
 Statut : cadrage.
+
+Le projet utilise `node --test` pour garder un harnais natif sans dépendance supplémentaire.
