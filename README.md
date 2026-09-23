@@ -49,3 +49,4 @@ Le contrôle automatique correspondant est exécutable avec `npm test` (17 tests
 > Note : le contrôle manuel du repli 1/7 se fait à partir des heures de lever/coucher calculées pour la même date et la date suivante ; la valeur Fajr ci-dessus est celle affichée par l'application et son ordre est vérifié par les tests.
 
 _Vérification du verrou de fusion de l'usine — 2026-09-23._
+test nettoyage 1790168835
