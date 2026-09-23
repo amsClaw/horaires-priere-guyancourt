@@ -50,6 +50,7 @@ export function solarNoon(date, lon) {
     throw new RangeError('longitude must be between -180 and 180 degrees');
   }
   const dayStart = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-  const minutes = 720 - 4 * lon - equationOfTime(new Date(dayStart));
+  const minutes = 720 - 4 * lon - equationOfTime(new Date(dayStart + 12 * 60 * 60 * 1000));
   return new Date(dayStart + minutes * 60_000);
 }
+
