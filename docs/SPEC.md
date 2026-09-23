@@ -40,6 +40,15 @@ Une page web unique, sans compte ni configuration, qui affiche les 5 horaires de
    Tout le calcul se fait dans le navigateur au chargement, à partir de la date système. Pas d'appel réseau nécessaire pour le calcul (une API météo/horaires externe est explicitement hors périmètre).
    Critère observable : la page s'ouvre en fichier local (`file://`) ou serveur statique et affiche des horaires cohérents, sans requête réseau bloquante visible dans l'onglet Network (hors chargement des assets statiques).
 
+## Décision d'Ams du 2026-09-23 — s'aligner sur la mosquée
+
+Le contrôle terrain a montré que le calcul UOIF 12° donne cinq prières à ±2 min de la
+Mosquée de Guyancourt, mais l'**Isha 23 minutes trop tôt**. Le calendrier publié par la
+mosquée n'est pas une formule (Fajr figé à 05:00 en été, Isha = Maghreb + 90 min de mars à
+septembre, 19:30 fixe en hiver). **Ams a tranché : l'app affiche les horaires publiés par
+la mosquée** (`data/mosquee-guyancourt-2026.json`), et ne calcule que pour les dates que
+le calendrier ne couvre pas. L'exigence 2 (UOIF 12°) devient le **repli**, pas la règle.
+
 ## Hors périmètre
 - Choix de ville/localisation par l'utilisateur.
 - Choix de méthode de calcul par l'utilisateur (UOIF/LIM/GMP) — figé pour ce pilote.
