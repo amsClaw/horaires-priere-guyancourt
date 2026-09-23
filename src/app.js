@@ -1,5 +1,6 @@
 import { computePrayerTimes } from './prayerTimes.js';
 import { toParisLocalTime } from './timezone.js';
+import { horairesDuCalendrier } from './calendrier.js';
 
 export const GUYANCOURT = Object.freeze({ lat: 48.7717, lon: 2.0761 });
 
@@ -20,13 +21,20 @@ function formatDate(date) {
 }
 
 export function renderPrayerTimes(date = new Date()) {
-  const times = computePrayerTimes(date, GUYANCOURT.lat, GUYANCOURT.lon);
+  const horairesPublies = horairesDuCalendrier(date);
+  const times = horairesPublies ?? computePrayerTimes(date, GUYANCOURT.lat, GUYANCOURT.lon);
   document.querySelector('#date').textContent = formatDate(date);
 
   for (const [key] of PRAYER_LABELS) {
     const value = times[key];
-    document.querySelector(`#${key}`).textContent = value === null ? '--:--' : toParisLocalTime(value);
+    document.querySelector(`#${key}`).textContent = value === null ? '--:--' : (
+      horairesPublies ? value : toParisLocalTime(value)
+    );
   }
+
+  document.querySelector('#source').textContent = horairesPublies
+    ? 'Source : Mosquée de Guyancourt (Mawaqit)'
+    : 'Source : calcul astronomique (UOIF 12°)';
 }
 
 renderPrayerTimes(new Date());
