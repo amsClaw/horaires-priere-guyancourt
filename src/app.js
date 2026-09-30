@@ -13,6 +13,10 @@ const PRAYER_LABELS = Object.freeze([
   ['isha', 'Isha'],
 ]);
 
+export const AVERTISSEMENT_REPLI =
+  'Calendrier de la mosquée non disponible pour cette date : horaires calculés, '
+  + 'ils peuvent différer de ceux de la mosquée (Isha jusqu\'à environ 1 h).';
+
 function formatDate(date) {
   return new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'full',
@@ -35,6 +39,10 @@ export function renderPrayerTimes(date = new Date(), doc = globalThis.document) 
   doc.querySelector('#source').textContent = horairesPublies
     ? 'Source : Mosquée de Guyancourt (Mawaqit)'
     : 'Source : calcul astronomique (UOIF 12°)';
+
+  const avertissement = doc.querySelector('#avertissement');
+  avertissement.textContent = horairesPublies ? '' : AVERTISSEMENT_REPLI;
+  avertissement.hidden = Boolean(horairesPublies);
 }
 
 // Marge après minuit : le minuteur ne doit pas se déclencher à 23:59:59.

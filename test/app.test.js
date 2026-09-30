@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { demarrer, delaiJusquauProchainMinuitParis } from '../src/app.js';
+import { demarrer, delaiJusquauProchainMinuitParis, AVERTISSEMENT_REPLI } from '../src/app.js';
 
 const HEURE = 3600 * 1000;
 
@@ -98,4 +98,28 @@ test('délai jusqu au prochain minuit de Paris, passage à l heure d été (29/0
     delaiJusquauProchainMinuitParis(new Date('2026-03-28T23:00:01Z')),
     23 * HEURE - 1000,
   );
+});
+
+test('avertissement visible quand le calendrier de la mosquée manque (2027)', () => {
+  const env = fauxEnvironnement();
+  demarrer(env.doc, env.win, () => new Date('2027-01-01T11:00:00Z'));
+  assert.equal(env.texte('avertissement'), AVERTISSEMENT_REPLI);
+  assert.equal(
+    AVERTISSEMENT_REPLI,
+    'Calendrier de la mosquée non disponible pour cette date : horaires calculés, '
+    + 'ils peuvent différer de ceux de la mosquée (Isha jusqu\'à environ 1 h).',
+  );
+  assert.equal(env.doc.querySelector('#avertissement').hidden, false);
+  assert.equal(env.texte('source'), 'Source : calcul astronomique (UOIF 12°)');
+});
+
+test('aucun avertissement quand le calendrier de la mosquée couvre la date (2026)', () => {
+  const env = fauxEnvironnement();
+  let maintenant = new Date('2027-01-01T11:00:00Z');
+  demarrer(env.doc, env.win, () => maintenant);
+  maintenant = new Date('2026-12-31T11:00:00Z');
+  env.ecouteursWin.pageshow({ persisted: true });
+  assert.equal(env.texte('avertissement'), '');
+  assert.equal(env.doc.querySelector('#avertissement').hidden, true);
+  assert.equal(env.texte('isha'), '19:30');
 });

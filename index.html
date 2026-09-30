@@ -57,6 +57,19 @@
       dt { font-weight: 600; }
       dd { margin: 0; font-variant-numeric: tabular-nums; font-size: 1.25rem; }
 
+      .avertissement {
+        margin: 1rem 0 0;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e0a100;
+        border-left-width: 0.35rem;
+        border-radius: 0.5rem;
+        background: #fff6db;
+        color: #5a4100;
+        font-weight: 600;
+      }
+
+      .avertissement[hidden] { display: none; }
+
       @media (min-width: 30rem) {
         .prayer-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .prayer { display: block; }
@@ -78,6 +91,7 @@
         <div class="prayer"><dt>Maghreb</dt><dd id="maghrib">--:--</dd></div>
         <div class="prayer"><dt>Isha</dt><dd id="isha">--:--</dd></div>
       </dl>
+      <p id="avertissement" class="avertissement" role="alert" hidden></p>
       <p id="source" aria-live="polite"></p>
     </main>
     <script type="module" src="./src/app.js"></script>
