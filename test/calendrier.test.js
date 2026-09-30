@@ -92,3 +92,76 @@ test('échéance : passe le 30/11/2026, ou le 01/12/2026 si 2027 est relevé', (
   verifierEcheanceCalendrier(new Date('2026-11-30T22:59:00Z'), [2026]);
   verifierEcheanceCalendrier(new Date('2026-11-30T23:00:00Z'), [2026, 2027]);
 });
+
+// --- Intégrité des calendriers publiés --------------------------------------
+// Chaque fichier data/mosquee-guyancourt-AAAA.json est contrôlé jour par jour :
+// une faute de frappe (« 5:00 ») ou deux horaires inversés font échouer ce test.
+
+const HEURE_HH_MM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function fichiersCalendrier() {
+  return readdirSync(DOSSIER_DATA)
+    .filter((nom) => /^mosquee-guyancourt-\d{4}\.json$/.test(nom))
+    .map((nom) => ({ nom, contenu: JSON.parse(readFileSync(new URL(nom, DOSSIER_DATA), 'utf8')) }));
+}
+
+function estBissextile(annee) {
+  return (annee % 4 === 0 && annee % 100 !== 0) || annee % 400 === 0;
+}
+
+function joursDansLeMois(annee, mois) {
+  return new Date(Date.UTC(annee, mois, 0)).getUTCDate();
+}
+
+test('intégrité : champ annee cohérent avec le nom du fichier', () => {
+  const fichiers = fichiersCalendrier();
+  assert.ok(fichiers.length > 0, 'aucun calendrier dans data/');
+  for (const { nom, contenu } of fichiers) {
+    assert.equal(contenu.annee, Number(nom.match(/(\d{4})/)[1]), `${nom} : champ annee`);
+    assert.equal(contenu.mois.length, 12, `${nom} : 12 mois attendus`);
+  }
+});
+
+test('intégrité : nombre de jours de chaque mois conforme à l année', () => {
+  for (const { nom, contenu } of fichiersCalendrier()) {
+    contenu.mois.forEach((jours, index) => {
+      const mois = index + 1;
+      const attendus = joursDansLeMois(contenu.annee, mois);
+      let cles = Object.keys(jours).map(Number).sort((a, b) => a - b);
+      // Mawaqit publie toujours un 29 février, y compris les années non
+      // bissextiles : cette entrée est inatteignible (le 29/02 n'existe pas).
+      if (mois === 2 && !estBissextile(contenu.annee) && cles.at(-1) === 29) cles = cles.slice(0, -1);
+      assert.deepEqual(
+        cles,
+        Array.from({ length: attendus }, (_, i) => i + 1),
+        `${nom} : mois ${mois} doit compter les jours 1 à ${attendus}`,
+      );
+    });
+  }
+});
+
+test('intégrité : février compte 29 jours les années bissextiles', () => {
+  for (const { nom, contenu } of fichiersCalendrier()) {
+    if (estBissextile(contenu.annee)) {
+      assert.ok(contenu.mois[1]['29'], `${nom} : 29 février manquant`);
+    }
+  }
+});
+
+test('intégrité : chaque jour a six horaires HH:MM strictement croissants', () => {
+  let joursControles = 0;
+  for (const { nom, contenu } of fichiersCalendrier()) {
+    contenu.mois.forEach((jours, index) => {
+      for (const [jour, horaires] of Object.entries(jours)) {
+        const ou = `${nom} : ${jour}/${index + 1}`;
+        assert.equal(horaires.length, 6, `${ou} : six horaires attendus`);
+        for (const h of horaires) assert.match(h, HEURE_HH_MM, `${ou} : « ${h} » n'est pas au format HH:MM`);
+        for (let i = 1; i < 6; i += 1) {
+          assert.ok(horaires[i - 1] < horaires[i], `${ou} : ${horaires[i - 1]} devrait précéder ${horaires[i]}`);
+        }
+        joursControles += 1;
+      }
+    });
+  }
+  assert.ok(joursControles >= 365);
+});
