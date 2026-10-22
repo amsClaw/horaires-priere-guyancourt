@@ -24,8 +24,8 @@ function formatDate(date) {
   }).format(date);
 }
 
-export function renderPrayerTimes(date = new Date(), doc = globalThis.document) {
-  const horairesPublies = horairesDuCalendrier(date);
+export function renderPrayerTimes(date = new Date(), doc = globalThis.document, calendrier = null) {
+  const horairesPublies = horairesDuCalendrier(date, calendrier);
   let times = horairesPublies;
   if (!times) {
     const { annee, mois, jour } = partiesParis(date.getTime());
@@ -49,6 +49,7 @@ export function renderPrayerTimes(date = new Date(), doc = globalThis.document) 
   const avertissement = doc.querySelector('#avertissement');
   avertissement.textContent = horairesPublies ? '' : AVERTISSEMENT_REPLI;
   avertissement.hidden = Boolean(horairesPublies);
+  doc.querySelector('#navigateur-incompatible').hidden = true;
 }
 
 // Marge après minuit : le minuteur ne doit pas se déclencher à 23:59:59.
@@ -94,25 +95,51 @@ export function delaiJusquauProchainMinuitParis(maintenant) {
  * Affiche les horaires du jour puis les tient à jour : au prochain minuit de
  * Paris, au retour sur l'onglet et à la restauration depuis le cache.
  */
-export function demarrer(doc, win, maintenant = () => new Date()) {
+export async function demarrer(doc, win, maintenant = () => new Date()) {
   let minuteur = null;
+  const calendriers = new Map();
 
-  function rafraichir() {
+  function chargerCalendrier(annee) {
+    if (!calendriers.has(annee)) {
+      const entree = { calendrier: null, chargement: null };
+      calendriers.set(annee, entree);
+      entree.chargement = (async () => {
+        try {
+          const reponse = await win.fetch(`./data/mosquee-guyancourt-${annee}.json`);
+          if (reponse.ok) entree.calendrier = await reponse.json();
+        } catch {
+          // Réseau ou JSON invalide : le calcul et son avertissement restent affichés.
+        }
+      })();
+    }
+    return calendriers.get(annee);
+  }
+
+  async function rafraichir() {
     const date = maintenant();
-    renderPrayerTimes(date, doc);
+    const annee = partiesParis(date.getTime()).annee;
+    // Afficher immédiatement, même si le réseau ne répond jamais.
+    renderPrayerTimes(date, doc, calendriers.get(annee)?.calendrier);
     if (minuteur !== null) win.clearTimeout(minuteur);
     minuteur = win.setTimeout(
       rafraichir,
       delaiJusquauProchainMinuitParis(date) + MARGE_APRES_MINUIT_MS,
     );
+    const entree = chargerCalendrier(annee);
+    await entree.chargement;
+    const dateActuelle = maintenant();
+    // Une ancienne requête ne doit pas écraser le rendu d'une nouvelle année.
+    if (partiesParis(dateActuelle.getTime()).annee === annee) {
+      renderPrayerTimes(dateActuelle, doc, entree.calendrier);
+    }
   }
 
   doc.addEventListener('visibilitychange', () => {
-    if (doc.visibilityState === 'visible') rafraichir();
+    if (doc.visibilityState === 'visible') return rafraichir();
   });
   win.addEventListener('pageshow', rafraichir);
 
-  rafraichir();
+  await rafraichir();
   return rafraichir;
 }
 

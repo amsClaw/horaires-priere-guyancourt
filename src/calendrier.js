@@ -1,5 +1,3 @@
-import calendrier from '../data/mosquee-guyancourt-2026.json' with { type: 'json' };
-
 const NOMS_HORAIRES = Object.freeze(['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha']);
 
 function dateDansParis(date) {
@@ -19,12 +17,15 @@ function dateDansParis(date) {
   };
 }
 
-export function horairesDuCalendrier(date) {
+export function horairesDuCalendrier(date, calendrier) {
   const dateParis = dateDansParis(date);
-  if (!dateParis || dateParis.annee !== calendrier.annee) return null;
+  if (!dateParis || dateParis.annee !== calendrier?.annee) return null;
 
-  const horaires = calendrier.mois[dateParis.mois - 1]?.[String(dateParis.jour)];
-  if (!horaires) return null;
+  const horaires = calendrier.mois?.[dateParis.mois - 1]?.[String(dateParis.jour)];
+  if (!Array.isArray(horaires) || horaires.length !== NOMS_HORAIRES.length
+      || !horaires.every((h) => typeof h === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(h))) {
+    return null;
+  }
 
   return Object.fromEntries(NOMS_HORAIRES.map((nom, index) => [nom, horaires[index]]));
 }
