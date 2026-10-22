@@ -10,10 +10,11 @@ Pré-requis : Node.js récent pour exécuter les tests. Aucun paquet npm externe
 npm test
 ```
 
-La commande collecte les tests natifs Node (`node --test`) et vérifie les calculs solaires, le fuseau Europe/Paris et les cas holdout. Pour ouvrir l'application, ouvrir `index.html` directement dans un navigateur (`file://`) ou servir le dossier avec un serveur statique, par exemple :
+La commande collecte les tests natifs Node (`node --test`) et vérifie les calculs solaires, le fuseau Europe/Paris et les cas holdout. Pour ouvrir l'application, servir le dossier avec un serveur statique : la page charge ses scripts comme modules JavaScript, que les navigateurs refusent d'exécuter depuis un fichier local (la page resterait vide, avec des « --:-- »). Depuis la racine du projet :
 
 ```sh
 python3 -m http.server 8000
+# ou : npx serve -l 8000
 ```
 
 Puis consulter `http://localhost:8000/`.
