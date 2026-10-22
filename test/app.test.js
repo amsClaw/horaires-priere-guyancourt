@@ -256,6 +256,49 @@ test('écran : une date 2027 affiche des horaires calculés HH:MM et la source c
   }
 });
 
+for (const { debut, reference, dateAffichee } of [
+  {
+    debut: '2027-03-16T00:30:00+01:00',
+    reference: '2027-03-16T23:30:00+01:00',
+    dateAffichee: 'mardi 16 mars 2027',
+  },
+  {
+    debut: '2027-07-01T01:30:00+02:00',
+    reference: '2027-07-01T12:00:00+02:00',
+    dateAffichee: 'jeudi 1 juillet 2027',
+  },
+]) {
+  test(`écran : mêmes six horaires de repli toute la journée du ${dateAffichee}`, () => {
+    const nuit = fauxDocument();
+    const jour = fauxDocument();
+    renderPrayerTimes(new Date(debut), nuit);
+    renderPrayerTimes(new Date(reference), jour);
+
+    for (const doc of [nuit, jour]) {
+      assert.equal(doc.texte('date'), dateAffichee);
+      assert.equal(doc.texte('source'), 'Source : calcul astronomique (UOIF 12°)');
+      for (const cle of CLES) assert.match(doc.texte(cle), /^\d{2}:\d{2}$/);
+    }
+    assert.deepEqual(CLES.map(nuit.texte), CLES.map(jour.texte));
+  });
+}
+
+test('le minuteur de minuit affiche le calcul du nouveau jour de Paris', async () => {
+  const env = fauxEnvironnement();
+  let maintenant = new Date('2027-03-15T23:50:00+01:00');
+  await demarrer(env.doc, env.win, () => maintenant);
+  const veille = CLES.map(env.texte);
+  const minuteur = env.minuteurs[0];
+  maintenant = new Date(maintenant.getTime() + minuteur.delai);
+  await minuteur.fn();
+
+  const midi = fauxDocument();
+  renderPrayerTimes(new Date('2027-03-16T12:00:00+01:00'), midi);
+  assert.equal(env.texte('date'), 'mardi 16 mars 2027');
+  assert.deepEqual(CLES.map(env.texte), CLES.map(midi.texte));
+  assert.notDeepEqual(CLES.map(env.texte), veille);
+});
+
 test('écran : aucune valeur « undefined » ou « NaN » avec le calendrier publié', () => {
   const doc = fauxDocument();
   renderPrayerTimes(new Date('2026-09-23T11:00:00Z'), doc, CALENDRIER_2026);

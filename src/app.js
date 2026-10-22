@@ -26,7 +26,13 @@ function formatDate(date) {
 
 export function renderPrayerTimes(date = new Date(), doc = globalThis.document, calendrier = null) {
   const horairesPublies = horairesDuCalendrier(date, calendrier);
-  const times = horairesPublies ?? computePrayerTimes(date, GUYANCOURT.lat, GUYANCOURT.lon);
+  let times = horairesPublies;
+  if (!times) {
+    const { annee, mois, jour } = partiesParis(date.getTime());
+    // Le calcul utilise le jour UTC : lui donner la date civile de Paris.
+    const jourDuCalcul = new Date(Date.UTC(annee, mois - 1, jour, 12));
+    times = computePrayerTimes(jourDuCalcul, GUYANCOURT.lat, GUYANCOURT.lon);
+  }
   doc.querySelector('#date').textContent = formatDate(date);
 
   for (const [key] of PRAYER_LABELS) {
